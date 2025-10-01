@@ -22,12 +22,6 @@ async function downloadToFile(url, filePath) {
   return filePath;
 }
 
-// Utilidad: tamaño en MB (decimal)
-function fileSizeMB(filePath) {
-  const b = fs.statSync(filePath).size;
-  return b / (1024 * 1024);
-}
-
 // Llama a tu API /api/download/yt.php
 async function callMyApi(url, format) {
   const r = await axios.get(`${API_BASE}/api/download/yt.php`, {
@@ -233,15 +227,7 @@ async function downloadAudio(conn, job, asDocument, quoted) {
     }
   }
 
-  // 3) Límite ~99MB
-  const sizeMB = fileSizeMB(outFile);
-  if (sizeMB > 1024) {
-    try { fs.unlinkSync(outFile); } catch {}
-    await conn.sendMessage(chatId, { text: `❌ El archivo de audio pesa ${sizeMB.toFixed(2)}MB (>99MB).` }, { quoted });
-    return;
-  }
-
-  // 4) Enviar
+  // 3) Enviar (sin límite de tamaño)
   const buffer = fs.readFileSync(outFile);
   await conn.sendMessage(chatId, {
     [asDocument ? "document" : "audio"]: buffer,
@@ -267,24 +253,16 @@ async function downloadVideo(conn, job, asDocument, quoted) {
   const file = path.join(tmp, `${Date.now()}_vid.mp4`);
   await downloadToFile(mediaUrl, file);
 
-  // 3) Límite ~99MB
-  const sizeMB = fileSizeMB(file);
-  if (sizeMB > 99) {
-    try { fs.unlinkSync(file); } catch {}
-    await conn.sendMessage(chatId, { text: `❌ El video pesa ${sizeMB.toFixed(2)}MB (>99MB).` }, { quoted });
-    return;
-  }
-
-  // 4) Enviar (solo añadí la línea de marca)
+  // 3) Enviar (sin límite de tamaño)
   await conn.sendMessage(chatId, {
     [asDocument ? "document" : "video"]: fs.readFileSync(file),
     mimetype: "video/mp4",
     fileName: `${title}.mp4`,
-    caption: `🎬 𝐀𝐪𝐮𝐢́ 𝐭𝐢𝐞𝐧𝐞𝐬 𝐭𝐮 𝐯𝐢𝐝𝐞𝐨~ 💫\n• API: api-sky.ultraplus.click\n© 𝐋𝐚 𝐒𝐮𝐤𝐢 𝐁𝐨𝐭`
+    caption: asDocument ? undefined : `🎬 𝐀𝐪𝐮𝐢́ 𝐭𝐢𝐞𝐧𝐞𝐬 𝐭𝐮 𝐯𝐢𝐝𝐞𝐨~ 💫\n• API: api-sky.ultraplus.click\n© 𝐋𝐚 𝐒𝐮𝐤𝐢 𝐁𝐨𝐭`
   }, { quoted });
 
   try { fs.unlinkSync(file); } catch {}
 }
 
-// 🔔 Solo cambié el nombre del comando aquí:
+// comando
 module.exports.command = ["play"];
